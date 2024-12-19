@@ -196,9 +196,9 @@ int main() {
         cout << "\nMenu:\n";
         cout << "1. Insertar nodo\n";
         cout << "2. Eliminar nodo\n";
-        cout << "3. Mostrar árbol\n";
+        cout << "3. Mostrar arbol\n";
         cout << "4. Salir\n";
-        cout << "Opción: ";
+        cout << "Opcion: ";
         cin >> opcion;
 
         switch (opcion) {
@@ -226,3 +226,4 @@ int main() {
 
     return 0;
 }
+
