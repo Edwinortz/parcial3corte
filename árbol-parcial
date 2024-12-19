@@ -1,0 +1,228 @@
+#include <iostream>
+
+
+using namespace std;
+
+
+struct Nodo {
+    int valor;
+    Nodo *izq;
+    Nodo *der;
+    int altura;
+};
+
+// altura de un nodo
+int altura(Nodo *nodo) {
+    return nodo ? nodo->altura : 0;
+}
+
+// Crear un nuevo nodo
+Nodo* crearNodo(int valor) {
+    Nodo* nuevoNodo = new Nodo();
+    nuevoNodo->valor = valor;
+    nuevoNodo->izq = nuevoNodo->der = nullptr;
+    nuevoNodo->altura = 1;
+    return nuevoNodo;
+}
+
+// Obtener el factor de balanceo de un nodo
+int obtenerBalance(Nodo *nodo) {
+    return nodo ? altura(nodo->izq) - altura(nodo->der) : 0;
+}
+
+// Rotación a la derecha
+Nodo* rotacionDerecha(Nodo *y) {
+    Nodo *x = y->izq;
+    Nodo *T2 = x->der;
+
+    // Realizar la rotación
+    x->der = y;
+    y->izq = T2;
+
+    // Actualizar alturas
+    y->altura = max(altura(y->izq), altura(y->der)) + 1;
+    x->altura = max(altura(x->izq), altura(x->der)) + 1;
+
+    return x;
+}
+
+// Rotación a la izquierda
+Nodo* rotacionIzquierda(Nodo *x) {
+    Nodo *y = x->der;
+    Nodo *T2 = y->izq;
+
+    // Realizar la rotación
+    y->izq = x;
+    x->der = T2;
+
+    // Actualizar alturas
+    x->altura = max(altura(x->izq), altura(x->der)) + 1;
+    y->altura = max(altura(y->izq), altura(y->der)) + 1;
+
+    return y;
+}
+
+// Insertar un nodo en el árbol AVL
+Nodo* insertar(Nodo* nodo, int valor) {
+    if (!nodo)
+        return crearNodo(valor);
+
+    if (valor < nodo->valor)
+        nodo->izq = insertar(nodo->izq, valor);
+    else if (valor > nodo->valor)
+        nodo->der = insertar(nodo->der, valor);
+    else // Valores duplicados no permitidos
+        return nodo;
+
+    // Actualizar la altura del nodo actual
+    nodo->altura = 1 + max(altura(nodo->izq), altura(nodo->der));
+
+    // Obtener el factor de balanceo
+    int balance = obtenerBalance(nodo);
+
+    // Rotaciones necesarias para balancear
+    // Caso Izquierda Izquierda
+    if (balance > 1 && valor < nodo->izq->valor)
+        return rotacionDerecha(nodo);
+
+    // Caso Derecha Derecha
+    if (balance < -1 && valor > nodo->der->valor)
+        return rotacionIzquierda(nodo);
+
+    // Caso Izquierda Derecha
+    if (balance > 1 && valor > nodo->izq->valor) {
+        nodo->izq = rotacionIzquierda(nodo->izq);
+        return rotacionDerecha(nodo);
+    }
+
+    // Caso Derecha Izquierda
+    if (balance < -1 && valor < nodo->der->valor) {
+        nodo->der = rotacionDerecha(nodo->der);
+        return rotacionIzquierda(nodo);
+    }
+
+    return nodo;
+}
+
+// Nodo con valor mínimo
+Nodo* nodoMinimo(Nodo* nodo) {
+    Nodo* actual = nodo;
+    while (actual->izq)
+        actual = actual->izq;
+    return actual;
+}
+
+// Eliminar un nodo del árbol AVL
+Nodo* eliminar(Nodo* raiz, int valor) {
+    if (!raiz)
+        return raiz;
+
+    if (valor < raiz->valor)
+        raiz->izq = eliminar(raiz->izq, valor);
+    else if (valor > raiz->valor)
+        raiz->der = eliminar(raiz->der, valor);
+    else {
+        if (!raiz->izq || !raiz->der) {
+            Nodo *temp = raiz->izq ? raiz->izq : raiz->der;
+            if (!temp) {
+                temp = raiz;
+                raiz = nullptr;
+            } else
+                *raiz = *temp;
+            delete temp;
+        } else {
+            Nodo* temp = nodoMinimo(raiz->der);
+            raiz->valor = temp->valor;
+            raiz->der = eliminar(raiz->der, temp->valor);
+        }
+    }
+
+    if (!raiz)
+        return raiz;
+
+    raiz->altura = 1 + max(altura(raiz->izq), altura(raiz->der));
+
+    int balance = obtenerBalance(raiz);
+
+    if (balance > 1 && obtenerBalance(raiz->izq) >= 0)
+        return rotacionDerecha(raiz);
+
+    if (balance > 1 && obtenerBalance(raiz->izq) < 0) {
+        raiz->izq = rotacionIzquierda(raiz->izq);
+        return rotacionDerecha(raiz);
+    }
+
+    if (balance < -1 && obtenerBalance(raiz->der) <= 0)
+        return rotacionIzquierda(raiz);
+
+    if (balance < -1 && obtenerBalance(raiz->der) > 0) {
+        raiz->der = rotacionDerecha(raiz->der);
+        return rotacionIzquierda(raiz);
+    }
+
+    return raiz;
+}
+
+// Recorrer el árbol en orden
+void recorrerEnOrden(Nodo* raiz) {
+    if (raiz) {
+        recorrerEnOrden(raiz->izq);
+        cout << raiz->valor << " ";
+        recorrerEnOrden(raiz->der);
+    }
+}
+
+// Mostrar el árbol en forma jerárquica
+void mostrarArbol(Nodo* raiz, int espacio = 0, int incremento = 5) {
+    if (!raiz)
+        return;
+
+    espacio += incremento;
+    mostrarArbol(raiz->der, espacio);
+
+    cout << endl;
+    for (int i = incremento; i < espacio; i++)
+        cout << " ";
+    cout << raiz->valor << "\n";
+
+    mostrarArbol(raiz->izq, espacio);
+}
+
+int main() {
+    Nodo* raiz = nullptr;
+    int opcion, valor;
+
+    do {
+        cout << "\nMenu:\n";
+        cout << "1. Insertar nodo\n";
+        cout << "2. Eliminar nodo\n";
+        cout << "3. Mostrar árbol\n";
+        cout << "4. Salir\n";
+        cout << "Opción: ";
+        cin >> opcion;
+
+        switch (opcion) {
+            case 1:
+                cout << "Ingrese el valor a insertar: ";
+                cin >> valor;
+                raiz = insertar(raiz, valor);
+                break;
+            case 2:
+                cout << "Ingrese el valor a eliminar: ";
+                cin >> valor;
+                raiz = eliminar(raiz, valor);
+                break;
+            case 3:
+                cout << "Árbol AVL en forma jerarquica:\n";
+                mostrarArbol(raiz);
+                break;
+            case 4:
+                cout << "Saliendo...\n";
+                break;
+            default:
+                cout << "Opcion no valida.\n";
+            }
+          } while (opcion != 4);
+
+    return 0;
+}
